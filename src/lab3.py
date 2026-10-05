@@ -1,198 +1,257 @@
-# ============================= УВАГА! =============================
-# Цей файл містить ПРИКЛАД виконання лабораторної роботи.
-# Ваше завдання - розробити ВЛАСНУ програму згідно з вашим варіантом.
-#
-# Ви можете використовувати цей код як зразок, але не копіювати його.
-# Повністю замініть цей код своєю реалізацією.
-#
-# Ваш код повинен відповідати таким вимогам:
-# 1. Обрана предметна область згідно з вашим варіантом.
-# 2. Реалізовано всі необхідні функції:
-#    - додавання, видалення, оновлення даних
-#    - пошук та фільтрація
-#    - обчислення статистик (середнє, min/max)
-#    - групування та агрегація
-# 3. Використано map(), filter(), reduce(), сортування, зрізи.
-# 4. Реалізовано операції з множинами та словниками.
-# 5. Створено інтерактивне меню для користувача.
-# =================================================================
+"""
+Лабораторна робота № 3: Операції зі структурами даних
+Варіант 13: Аналіз медичних даних (пацієнти, діагнози, лікування)
+"""
 
 from collections import defaultdict
 from functools import reduce
-import datetime
 
-# Приклад: Аналіз даних про продажі
-# ЗАМІНІТЬ ЦІ ДАНІ ТА ЛОГІКУ НА ВАШІ ВЛАСНІ
-
-# 1. Підготовка даних
-sales_data = [
-    {"date": "2023-01-01", "product": "Laptop", "category": "Electronics", "price": 1200, "quantity": 5},
-    {"date": "2023-01-02", "product": "Smartphone", "category": "Electronics", "price": 800, "quantity": 10},
-    {"date": "2023-01-03", "product": "T-shirt", "category": "Clothing", "price": 20, "quantity": 50},
-    {"date": "2023-01-04", "product": "Jeans", "category": "Clothing", "price": 60, "quantity": 30},
-    {"date": "2023-01-05", "product": "Keyboard", "category": "Electronics", "price": 75, "quantity": 20},
+# 1. Початковий набір даних (список словників)
+patients_data = [
+    {
+        "id": 1,
+        "name": "Тадеуш Ковальский",
+        "age": 45,
+        "diagnosis": "Гіпертонія",
+        "cost": 1200.50,
+        "medications": {"Lisinopril", "Aspirin"}
+    },
+    {
+        "id": 2,
+        "name": "Адам Новак",
+        "age": 32,
+        "diagnosis": "Грип",
+        "cost": 450.00,
+        "medications": {"Paracetamol", "Ibuprofen", "Vitamin C"}
+    },
+    {
+        "id": 3,
+        "name": "Яцек Левандовський",
+        "age": 60,
+        "diagnosis": "Цукровий діабет",
+        "cost": 3100.00,
+        "medications": {"Metformin", "Aspirin"}
+    },
+    {
+        "id": 4,
+        "name": "Томаш Камінський",
+        "age": 28,
+        "diagnosis": "Грип",
+        "cost": 500.00,
+        "medications": {"Paracetamol", "Amoxicillin"}
+    },
+    {
+        "id": 5,
+        "name": "Марек Потоцький",
+        "age": 52,
+        "diagnosis": "Гіпертонія",
+        "cost": 1850.00,
+        "medications": {"Amlodipine", "Lisinopril"}
+    }
 ]
 
-# 2. Функції для роботи з даними
-def add_sale(data, sale):
-    """Додає новий запис про продаж."""
-    data.append(sale)
-    print("Продаж додано успішно.")
 
-def remove_sale(data, index):
-    """Видаляє запис про продаж за індексом."""
-    if 0 <= index < len(data):
-        del data[index]
-        print("Продаж видалено успішно.")
+# 2. Базові операції зі структурами даних (CRUD)
+def add_patient(data, patient):
+    """Додає нового пацієнта."""
+    data.append(patient)
+    print("Запис про пацієнта успішно додано.")
+
+def remove_patient(data, patient_id):
+    """Видаляє пацієнта за унікальним ID."""
+    initial_len = len(data)
+    data[:] = [p for p in data if p["id"] != patient_id]
+    if len(data) < initial_len:
+        print(f"Пацієнта з ID {patient_id} успішно видалено.")
     else:
-        print("Невірний індекс.")
+        print("Пацієнта з таким ID не знайдено.")
 
-def update_sale(data, index, key, value):
-    """Оновлює інформацію про продаж."""
-    if 0 <= index < len(data):
-        # Перетворення значення до відповідного типу
-        if key in ['price', 'quantity']:
-            try:
-                value = float(value) if key == 'price' else int(value)
-            except ValueError:
-                print(f"Невірний тип значення для ключа '{key}'")
-                return
-        data[index][key] = value
-        print("Інформацію оновлено успішно.")
-    else:
-        print("Невірний індекс.")
+def update_patient(data, patient_id, key, value):
+    """Оновлює дані пацієнта."""
+    for p in data:
+        if p["id"] == patient_id:
+            if key in ["age", "id"]:
+                value = int(value)
+            elif key == "cost":
+                value = float(value)
+            elif key == "medications":
+                # Перетворення рядка ліків через кому у множину (set)
+                value = set(med.strip() for med in value.split(","))
+            
+            p[key] = value
+            print("Дані пацієнта успішно оновлено.")
+            return
+    print("Пацієнта з таким ID не знайдено.")
 
-def find_sales_by_product(data, product):
-    """Знаходить всі продажі конкретного продукту."""
-    return list(filter(lambda x: x["product"].lower() == product.lower(), data))
 
-# 3. Специфічні функції аналізу
-def calculate_total_sales(data):
-    """Обчислює загальну суму продажів."""
-    return reduce(lambda acc, sale: acc + sale["price"] * sale["quantity"], data, 0)
+# 3. Пошук та фільтрація (з використанням filter, map)
+def find_by_diagnosis(data, diagnosis):
+    """Шукає пацієнтів за діагнозом (використовує filter)."""
+    return list(filter(lambda p: p["diagnosis"].lower() == diagnosis.lower(), data))
 
-def calculate_average_price(data):
-    """Обчислює середню ціну товару."""
-    prices = [sale["price"] for sale in data]
-    return sum(prices) / len(prices) if prices else 0
+def get_patient_names_uppercase(data):
+    """Повертає список імен пацієнтів у верхньому регістрі (використовує map)."""
+    return list(map(lambda p: p["name"].upper(), data))
 
-# 4. Вбудовані функції та методи
-def sort_sales_by_date(data):
-    """Сортує продажі за датою."""
-    return sorted(data, key=lambda x: datetime.datetime.strptime(x["date"], "%Y-%m-%d"))
 
-# 5. Робота з множинами та словниками
-def group_sales_by_category(data):
-    """Групує продажі за категоріями."""
-    categories = defaultdict(list)
-    for sale in data:
-        categories[sale["category"]].append(sale)
-    return dict(categories)
+# 4. Аналітичні та статистичні функції (з використанням reduce)
+def calculate_total_cost(data):
+    """Обчислює загальну вартість лікування всіх пацієнтів (використовує reduce)."""
+    return reduce(lambda acc, p: acc + p["cost"], data, 0.0)
 
-def find_best_selling_product(data):
-    """Знаходить товар, який найкраще продається."""
+def calculate_age_stats(data):
+    """Обчислює середній, мінімальний та максимальний вік пацієнтів."""
     if not data:
-        return None
-    products = defaultdict(int)
-    for sale in data:
-        products[sale["product"]] += sale["quantity"]
-    return max(products, key=products.get)
+        return 0, 0, 0
+    ages = [p["age"] for p in data]
+    avg_age = sum(ages) / len(ages)
+    return avg_age, min(ages), max(ages)
 
-# 6. Інтерактивне меню
+
+# 5. Сортування та зрізи
+def get_top_expensive_patients(data, top_n=3):
+    """Сортує пацієнтів за вартістю лікування та повертає Top-N через зріз."""
+    sorted_data = sorted(data, key=lambda p: p["cost"], reverse=True)
+    return sorted_data[:top_n]
+
+
+# 6. Робота з множинами та словниками
+def group_patients_by_diagnosis(data):
+    """Групує пацієнтів за діагнозами за допомогою defaultdict."""
+    grouped = defaultdict(list)
+    for p in data:
+        grouped[p["diagnosis"]].append(p["name"])
+    return dict(grouped)
+
+def analyze_medications_sets(data):
+    """Виконує операції з множинами ліків (унікальні та спільні)."""
+    if not data:
+        return set(), set()
+    
+    # Усі унікальні ліки (об'єднання множин)
+    all_meds = set().union(*(p["medications"] for p in data))
+    
+    # Ліки, які призначені усім пацієнтам (перетин множин)
+    common_meds = set.intersection(*(p["medications"] for p in data))
+    
+    return all_meds, common_meds
+
+
+# 7. Інтерактивне меню
 def print_menu():
-    """Виводить меню опцій."""
-    print("\n==== Меню аналізу продажів (ПРИКЛАД) ====")
-    print("1. Показати всі продажі")
-    print("2. Додати новий продаж")
-    print("3. Видалити продаж")
-    print("4. Оновити інформацію про продаж")
-    print("5. Знайти продажі за назвою товару")
-    print("6. Обчислити загальну суму продажів")
-    print("7. Групувати продажі за категоріями")
-    print("8. Сортувати продажі за датою")
-    print("9. Знайти товар, який найкраще продається")
-    print("10. Обчислити середню ціну товару")
+    """Виводить меню програми."""
+    print("\n==== СИСТЕМА АНАЛІЗУ МЕДИЧНИХ ДАНИХ ====")
+    print("1. Показати всіх пацієнтів")
+    print("2. Додати нового пацієнта")
+    print("3. Видалити пацієнта за ID")
+    print("4. Оновити дані пацієнта")
+    print("5. Пошук пацієнтів за діагнозом (filter)")
+    print("6. Загальна вартість лікування (reduce)")
+    print("7. Статистика віку пацієнтів (сер/min/max)")
+    print("8. Групування пацієнтів за діагнозом (словники)")
+    print("9. Топ пацієнтів за вартістю лікування (сорт + зрізи)")
+    print("10. Аналіз ліків (операції з множинами)")
     print("0. Вийти")
 
 def main():
-    """Головна функція програми."""
-    global sales_data
+    global patients_data
+    
     while True:
         print_menu()
-        choice = input("Оберіть опцію: ")
+        choice = input("Оберіть опцію (0-10): ").strip()
 
         if choice == "1":
-            if not sales_data:
-                print("Немає даних про продажі.")
-            for i, sale in enumerate(sales_data):
-                print(f"{i}: {sale}")
+            if not patients_data:
+                print("База даних порожня.")
+            else:
+                for p in patients_data:
+                    meds_str = ", ".join(p["medications"])
+                    print(f"ID: {p['id']} | Ім'я: {p['name']} | Вік: {p['age']} | "
+                          f"Діагноз: {p['diagnosis']} | Вартість лікування: {p['cost']:.2f} грн | Ліки: [{meds_str}]")
+
         elif choice == "2":
             try:
-                date = input("Введіть дату (YYYY-MM-DD): ")
-                datetime.datetime.strptime(date, "%Y-%m-%d") # перевірка формату
-                product = input("Введіть назву товару: ")
-                category = input("Введіть категорію: ")
-                price = float(input("Введіть ціну: "))
-                quantity = int(input("Введіть кількість: "))
-                new_sale = {"date": date, "product": product, "category": category, "price": price, "quantity": quantity}
-                add_sale(sales_data, new_sale)
+                p_id = int(input("Введіть ID: "))
+                name = input("Введіть ПІБ пацієнта: ")
+                age = int(input("Введіть вік: "))
+                diagnosis = input("Введіть діагноз: ")
+                cost = float(input("Введіть вартість лікування: "))
+                meds_input = input("Введіть ліки через кому: ")
+                medications = set(m.strip() for m in meds_input.split(",") if m.strip())
+
+                new_p = {
+                    "id": p_id, "name": name, "age": age,
+                    "diagnosis": diagnosis, "cost": cost,
+                    "medications": medications
+                }
+                add_patient(patients_data, new_p)
             except ValueError:
-                print("Помилка введення. Перевірте формат дати, ціни та кількості.")
+                print("Помилка! Введено некоректні числові дані.")
+
         elif choice == "3":
             try:
-                index = int(input("Введіть індекс продажу для видалення: "))
-                remove_sale(sales_data, index)
+                p_id = int(input("Введіть ID пацієнта для видалення: "))
+                remove_patient(patients_data, p_id)
             except ValueError:
-                print("Невірний індекс. Введіть число.")
+                print("Помилка! ID має бути цілим числом.")
+
         elif choice == "4":
             try:
-                index = int(input("Введіть індекс продажу для оновлення: "))
-                if not (0 <= index < len(sales_data)):
-                    print("Невірний індекс.")
-                    continue
-                key = input("Введіть ключ для оновлення (date/product/category/price/quantity): ")
-                if key not in sales_data[0]:
-                    print("Невірний ключ.")
-                    continue
-                value = input("Введіть нове значення: ")
-                update_sale(sales_data, index, key, value)
+                p_id = int(input("Введіть ID пацієнта для оновлення: "))
+                key = input("Введіть поле (name/age/diagnosis/cost/medications): ").strip()
+                val = input("Введіть нове значення: ")
+                update_patient(patients_data, p_id, key, val)
             except ValueError:
-                print("Невірний індекс. Введіть існуючий числовий індекс.")
+                print("Помилка введення даних.")
+
         elif choice == "5":
-            product = input("Введіть назву товару для пошуку: ")
-            results = find_sales_by_product(sales_data, product)
+            diag = input("Введіть діагноз для пошуку: ")
+            results = find_by_diagnosis(patients_data, diag)
             if results:
-                for sale in results:
-                    print(sale)
+                print(f"Знайдено пацієнтів ({len(results)}):")
+                for p in results:
+                    print(f" - {p['name']} (Вік: {p['age']}, Вартість: {p['cost']})")
             else:
-                print(f"Продажі для товару '{product}' не знайдено.")
+                print("Пацієнтів з таким діагнозом не знайдено.")
+
         elif choice == "6":
-            total = calculate_total_sales(sales_data)
-            print(f"Загальна сума продажів: {total}")
+            total = calculate_total_cost(patients_data)
+            print(f"Загальна вартість лікування всіх пацієнтів: {total:.2f} грн")
+
         elif choice == "7":
-            grouped = group_sales_by_category(sales_data)
-            for category, sales in grouped.items():
-                print(f"\nКатегорія: {category}:")
-                for sale in sales:
-                    print(f"  {sale}")
+            avg_a, min_a, max_a = calculate_age_stats(patients_data)
+            print(f"Вік пацієнтів: Середній = {avg_a:.1f} р. | Наймолодший = {min_a} р. | Найстарший = {max_a} р.")
+
         elif choice == "8":
-            sorted_sales = sort_sales_by_date(sales_data)
-            for sale in sorted_sales:
-                print(sale)
+            grouped = group_patients_by_diagnosis(patients_data)
+            print("\nРозподіл пацієнтів за діагнозами:")
+            for diag, names in grouped.items():
+                print(f"  * {diag}: {', '.join(names)}")
+
         elif choice == "9":
-            best_product = find_best_selling_product(sales_data)
-            if best_product:
-                print(f"Товар, який найкраще продається: {best_product}")
-            else:
-                print("Немає даних для аналізу.")
+            try:
+                n = int(input("Скільки найдорожчих випадків вивести (наприклад, 3)? "))
+                top_patients = get_top_expensive_patients(patients_data, n)
+                print(f"\nТоп-{n} найдорожчих лікувань:")
+                for p in top_patients:
+                    print(f"  - {p['name']} ({p['diagnosis']}): {p['cost']:.2f} грн")
+            except ValueError:
+                print("Помилка! Введіть ціле число.")
+
         elif choice == "10":
-            avg_price = calculate_average_price(sales_data)
-            print(f"Середня ціна товару: {avg_price:.2f}")
+            all_meds, common_meds = analyze_medications_sets(patients_data)
+            print(f"Усі унікальні медикаменти у базі ({len(all_meds)}): {', '.join(all_meds)}")
+            if common_meds:
+                print(f"Спільні ліки для ВСІХ пацієнтів: {', '.join(common_meds)}")
+            else:
+                print("Спільних ліків для всіх пацієнтів немає.")
+
         elif choice == "0":
-            print("Дякуємо за використання програми!")
+            print("Завершення роботи програми.")
             break
+
         else:
-            print("Невірний вибір. Спробуйте ще раз.")
+            print("Невірний вибір. Введіть число від 0 до 10.")
 
 if __name__ == "__main__":
     main()
